@@ -13,7 +13,7 @@ def func(x1, x2):
 # Pertubação para o Hill Climbing
 
 
-def perturb(x, lower_bound, upper_bound, e=math.pow(10, -2)):
+def perturb(x, lower_bound, upper_bound, e=2.9):
     cand = np.random.uniform(low=x-e, high=x+e)
     return np.clip(cand, lower_bound, upper_bound)
 
@@ -21,14 +21,14 @@ def perturb(x, lower_bound, upper_bound, e=math.pow(10, -2)):
 
 
 def perturb2(x, σ):
-    n = round(np.random.uniform(0, σ), 3)
+    n = np.random.normal(0, σ)
     return x + n
 
 # Pertubação para o Global Random Search
 
 
 def perturb3(min, max):
-    return round(np.random.uniform(min, max), 3)
+    return np.random.uniform(min, max)
 
 
 # Defindo espaço de estados
@@ -42,7 +42,7 @@ fig = plt.figure()
 ax = fig.add_subplot(projection='3d')
 
 # Instanciando o resolvedor do problema
-algo = Algo(x1_axis, x2_axis, 10000, 100, 20)
+algo = Algo(x1_axis, x2_axis, 10000, 100, 55)
 hc_results = []
 lrs_results = []
 grs_results = []
@@ -52,24 +52,33 @@ for i in range(100):
     # Resultados do Hill Climbing
     hc_results.append(algo.hill_climbing(perturb, func, False))
     ax.scatter(
-        hc_results[i]["X1"], hc_results[i]
-        ["X2"], hc_results[i]["F"], marker='o', c='r')
-
+        hc_results[i]["X1"], hc_results[i]["X2"],
+        hc_results[i]["F"], color='red',
+        alpha=0.5,
+        label='Resultados HC' if i == 0 else "")
     # Resultados do Local Random Search
-    lrs_results.append(algo.lrs(perturb2, func, 0.5, False))
+    lrs_results.append(algo.lrs(perturb2, func, 0.6, False))
     ax.scatter(
-        lrs_results[i]["X1"], lrs_results[i]
-        ["X2"], lrs_results[i]["F"], marker='X', color='b')
-
+        lrs_results[i]["X1"], lrs_results[i]["X2"],
+        lrs_results[i]["F"], color='blue',
+        alpha=0.6,
+        label='Resultados LRS' if i == 0 else "")
     # Resultados do Global Random Search
-    grs_results.append(algo.grs(perturb2, func, False))
+    grs_results.append(algo.grs(perturb3, func, False))
     ax.scatter(
-        grs_results[i]["X1"], grs_results[i]
-        ["X2"], grs_results[i]["F"], marker='o', c='green')
+        grs_results[i]["X1"], grs_results[i]["X2"],
+        grs_results[i]["F"], color='green',
+        alpha=0.5,
+        label='Resultados GRS' if i == 0 else "")
 
 # Gráfico geral
-ax.plot_surface(X, Y, func(X, Y), cmap='jet')
+ax.plot_surface(X, Y, func(X, Y), cmap='inferno')
+ax.set_title(r'$f(x_1, x_2) = x_1^2+x_2^2$', fontsize=9)
+ax.set_xlabel(r'$x_1$')
+ax.set_ylabel(r'$x_2$')
+ax.set_zlabel(r'$f(x_1, x_2)$')
 ax.contour(X, Y, func(X, Y), offset=-0.3, cmap='grey')
+ax.legend()
 plt.show()
 
 g = gs.GridSpec(3, 3)
@@ -90,12 +99,12 @@ ax1.set_title('Histograma para HC Results')
 ax1.set_xlabel('Valor')
 ax1.set_ylabel('Frequência')
 ax1.legend()
-
+print("HC")
 indexes_v1 = np.where(v1[0] == v1[0].max())
 indexes_v2 = np.where(v2[0] == v2[0].max())
 print(v1[1][indexes_v1])
 print(v2[1][indexes_v2])
-
+print(func(v2[1][indexes_v1][0], v2[1][indexes_v1][0]))
 v1, v2 = (
     ax2.hist(
         [r["X1"] for r in lrs_results], bins=100,
@@ -109,10 +118,12 @@ ax2.set_xlabel('Valor')
 ax2.set_ylabel('Frequência')
 ax2.legend()
 
+print("LRS")
 indexes_v1 = np.where(v1[0] == v1[0].max())
 indexes_v2 = np.where(v2[0] == v2[0].max())
 print(v1[1][indexes_v1])
 print(v2[1][indexes_v2])
+print(func(v2[1][indexes_v1][0], v2[1][indexes_v1][0]))
 
 v1, v2 = (
     ax3.hist(
@@ -128,10 +139,12 @@ ax3.set_xlabel('Valor')
 ax3.set_ylabel('Frequência')
 ax3.legend()
 
+print("GRS")
 indexes_v1 = np.where(v1[0] == v1[0].max())
 indexes_v2 = np.where(v2[0] == v2[0].max())
 print(v1[1][indexes_v1])
 print(v2[1][indexes_v2])
+print(func(v2[1][indexes_v1][0], v2[1][indexes_v1][0]))
 
 # Ajusta o layout para que os gráficos não se sobreponham
 plt.tight_layout()

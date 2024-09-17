@@ -47,7 +47,7 @@ def cooling_schedule(T, cooling_rate, method='geometric'):
 # Função principal que implementa a Têmpera Simulada
 
 
-def tempera_simulada_8_rainhas(it_max=1000, T_init=100, sigma=0.2, cooling_rate=0.99, max_sem_melhora=100, method='geometric'):
+def tempera_simulada_8_rainhas(it_max=10000, T_init=100, sigma=0.2, cooling_rate=0.99, max_sem_melhora=100, method='geometric'):
     # Iniciar com uma solução aleatória
     solucao_atual = np.random.randint(0, 8, size=8)
     f_atual = f(solucao_atual)

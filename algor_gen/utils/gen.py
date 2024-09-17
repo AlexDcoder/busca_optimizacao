@@ -3,99 +3,94 @@ import numpy as np
 
 class AlgoGenCont:
     def __init__(
-        self, A, p, nd, lim_inf, lim_sup, recomb, is_can=True,
-            tam_torneio=0) -> None:
-        self.A = A
+            self,
+            N: int, p: int, nd: int,
+            lim_inf: int | float, lim_sup: int | float,
+            recomb: float,
+            is_can=True,
+            tam_torneio=0,
+            qtd_geracoes: int = 10) -> None:
+        # Hiperparâmtros
+        self.N = N
         self.p = p
         self.nd = nd
-        self.lim_inf = lim_inf
-        self.lim_sup = lim_sup
+        self.lims = [lim_inf, lim_sup]
         self.recomb = recomb
         self.is_can = is_can
-        self.cromoss = self.repr_cromossom()
+        self.qtd_geracoes = qtd_geracoes
         self.tam_torneio = tam_torneio
 
-    def f(self, x):
-        # função de Rastringin
-        if self.is_can:
-            s = 0
-            for i in range(len(x)):
-                v = (2**i) * x[len(x)-i-1]
-                s += v**2 - self.A * np.cos(2*np.pi*v)
-            return self.A * self.p + s
+        self.population = self.generate_population()
+        self.probabilities: list = self.defining_probs()
 
-        return self.A * self.p + sum([
-            xi**2 - self.A * np.cos(2*np.pi*xi)
-            for xi in x])
+    def rastrigin(self, x):
+        if self.is_can:
+            decod_x = self.phi(x)
+            return 10*self.p + sum([i**2 - 10*np.cos(2*np.pi*i) for i in decod_x])
+        else:
+            return 10*self.p + sum([i**2 - 10*np.cos(2*np.pi*i) for i in x])
 
     def psi(self, x):
-        # Função aptidão
-        return self.f(x) + 1
+        return self.rastrigin(x) + 1
 
-    def roleta(self):
-        dec_bin = [
-            sum([2**i * c[len(c)-i-1] for i in range(len(c))])
-            for c in self.cromoss]
-        total = sum(dec_bin)
-        probs = [dec / total for dec in dec_bin]
+    def phi(self, x):
+        s = 0
+        for i in range(len(x)):
+            s += x[len(x)-i-1]*2**i
+        return self.lims[0] + (self.lims[1]-self.lims[0])/(2**len(x)-1)*s
+
+    def generate_population(self):
+        if self.is_can:
+            return np.random.uniform(
+                low=0, high=2, size=(self.N, self.p*self.nd)).astype(int)
+        return np.random.uniform(
+            low=self.lims[0], high=self.lims[1], size=(self.N, self.p))
+
+    # Definindo a probabilidade de cada
+    def defining_probs(self):
+        probs = []
+        for i in self.population:
+            if self.is_can:
+                pass
+            else:
+                pass
+
+        return probs
+
+    # Algoritmos de seleção
+    def roleta(self, prob):
         i = 0
-        s = probs[i]
+        s = prob[i]
         r = np.random.uniform()
         while s < r:
             i += 1
-            s += probs[i]
-        return self.cromoss[i, :]
+            s += prob[i]
+        return prob[i, :]
 
     def torneio(self):
-        sobrevivente = np.random.choice(
-            len(self.cromoss), self.tam_torneio, replace=False)
-        print(sobrevivente)
-        return self.cromoss[sobrevivente]
+        index_fighters = np.random.choice(
+            self.N, size=self.tam_torneio, replace=False)
+        fighters = self.population[index_fighters]
+        pontuation = [self.psi(fighter) for fighter in fighters]
+        return fighters[pontuation.index(min(pontuation))]
 
     def recombination(self):
-        pass
+        if self.is_can:
+            return
+        else:
+            return
 
     def mutation(self):
         if self.is_can:
+            # Mutação de  um só ponto
             return
-        return
-
-    def repr_cromossom(self):
-        if self.is_can:
-            return np.random.uniform(
-                low=0, high=2,
-                size=(self.A, self.p)).astype(int)
-        return np.random.uniform(
-            low=self.lim_inf,
-            high=self.lim_sup, size=(self.A, self.p))
-
-    def exec(self):
-        if self.is_can:
+        else:
+            # Mutação Gaussiana
             return
-        return
 
-
-class AlgoGenDisc:
-    def __init__(self, N, np, qtd_max_geracoes):
-        self.N = N
-        self.qtd_max_geracoes = qtd_max_geracoes
-        self.np = np
-        self.mutations: dict[str, int] = {}
-        self.cromossom = self.gerar_populacao()
-
-    def gerar_populacao(self):
-        return [
-            np.random.uniform(low=0, high=self.N, size=(self.np)).astype(int)
-            for _ in range(self.N)]
-
-    def roleta(self):
-        pass
-
-    def elitismo(self):
-        pass
-
-    def recombination(self):
-        pass
-
-    def mutation(self):
-        pass
+    def execute(self):
+        for ger in range(self.qtd_geracoes):
+            if self.is_can:
+                return
+            else:
+                return
