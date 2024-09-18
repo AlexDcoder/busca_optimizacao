@@ -10,6 +10,7 @@ class AlgoGenCont:
             is_can=True,
             tam_torneio=0,
             qtd_geracoes: int = 10) -> None:
+
         # Hiperparâmtros
         self.N = N
         self.p = p
@@ -19,10 +20,9 @@ class AlgoGenCont:
         self.is_can = is_can
         self.qtd_geracoes = qtd_geracoes
         self.tam_torneio = tam_torneio
-
         self.population = self.generate_population()
-        self.probabilities: list = self.defining_probs()
 
+    # Função a ser minimizada
     def rastrigin(self, x):
         if self.is_can:
             decod_x = self.phi(x)
@@ -39,6 +39,7 @@ class AlgoGenCont:
             s += x[len(x)-i-1]*2**i
         return self.lims[0] + (self.lims[1]-self.lims[0])/(2**len(x)-1)*s
 
+    # Funções de Geração
     def generate_population(self):
         if self.is_can:
             return np.random.uniform(
@@ -46,18 +47,19 @@ class AlgoGenCont:
         return np.random.uniform(
             low=self.lims[0], high=self.lims[1], size=(self.N, self.p))
 
-    # Definindo a probabilidade de cada
-    def defining_probs(self):
-        probs = []
-        for i in self.population:
-            if self.is_can:
-                pass
-            else:
-                pass
+    def generate_x(self):
+        if self.is_can:
+            return np.random.uniform(
+                0, 2, self.p*self.nd).astype(int)
+        return np.random.uniform(
+            self.lims[0], self.lims[1], self.p)
 
-        return probs
+    def generate_new_population(self, population):
+        nova_pop = []
+        return nova_pop
 
-    # Algoritmos de seleção
+    # Funções de Seleção
+
     def roleta(self, prob):
         i = 0
         s = prob[i]
@@ -74,13 +76,28 @@ class AlgoGenCont:
         pontuation = [self.psi(fighter) for fighter in fighters]
         return fighters[pontuation.index(min(pontuation))]
 
-    def recombination(self):
+    # Função de Recombinação
+    def recombination(self, x1, x2):
         if self.is_can:
-            return
+            # Por pontos
+            f1 = np.copy(x1)
+            f2 = np.copy(x2)
+            m = np.zeros(len(x1))
+            idx = np.random.randint(1, len(m))
+            m[idx:] = 1
+            f1[m[:] == 1] = x2[m[:] == 1]
+            f2[m[:] == 1] = x1[m[:] == 1]
+            return f1, f2
         else:
-            return
+            # SBX
+            i = np.random.uniform(len(self.x1))
+            gamma = np.where(i <= 0.5, (2*i)**(1))
+            f1 = np.concatenate((x1[:gamma], x2[gamma:]))
+            f2 = np.concatenate((x2[:gamma], x1[gamma:]))
+            return f1, f2
 
-    def mutation(self):
+    # Função de Mutação
+    def mutation(self, x, tax_mutation):
         if self.is_can:
             # Mutação de  um só ponto
             return
@@ -88,6 +105,7 @@ class AlgoGenCont:
             # Mutação Gaussiana
             return
 
+    # Função de Execução
     def execute(self):
         for ger in range(self.qtd_geracoes):
             if self.is_can:
