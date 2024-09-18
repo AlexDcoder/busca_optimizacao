@@ -11,7 +11,7 @@ class AlgoGenCont:
             tam_torneio=0,
             qtd_geracoes: int = 10) -> None:
 
-        # Hiperparâmtros
+        # Hiperparâmetros
         self.N = N
         self.p = p
         self.nd = nd
@@ -37,7 +37,8 @@ class AlgoGenCont:
         s = 0
         for i in range(len(x)):
             s += x[len(x)-i-1]*2**i
-        return self.lims[0] + (self.lims[1]-self.lims[0])/(2**len(x)-1)*s
+        # Return a list of decoded values
+        return [self.lims[0] + (self.lims[1]-self.lims[0])/(2**len(x)-1)*s]
 
     # Funções de Geração
     def generate_population(self):
@@ -54,12 +55,7 @@ class AlgoGenCont:
         return np.random.uniform(
             self.lims[0], self.lims[1], self.p)
 
-    def generate_new_population(self, population):
-        nova_pop = []
-        return nova_pop
-
     # Funções de Seleção
-
     def roleta(self, prob):
         i = 0
         s = prob[i]
@@ -67,19 +63,32 @@ class AlgoGenCont:
         while s < r:
             i += 1
             s += prob[i]
-        return prob[i, :]
+        return self.population[i]
 
     def torneio(self):
+        if self.tam_torneio <= 0 or self.tam_torneio > self.N:
+            raise ValueError(
+                "O tamanho do torneio deve ser maior que 0 e menor ou igual ao tamanho da população.")
+
+        # Seleção dos lutadores
         index_fighters = np.random.choice(
             self.N, size=self.tam_torneio, replace=False)
         fighters = self.population[index_fighters]
+
+        # Avaliação dos lutadores
         pontuation = [self.psi(fighter) for fighter in fighters]
-        return fighters[pontuation.index(min(pontuation))]
+
+        if not pontuation:
+            raise ValueError("A lista de pontuação está vazia.")
+
+        # Seleção do melhor lutador
+        min_pontuation = min(pontuation)
+        return fighters[pontuation.index(min_pontuation)]
 
     # Função de Recombinação
     def recombination(self, x1, x2):
         if self.is_can:
-            # Por pontos
+            # Por ponto de corte
             f1 = np.copy(x1)
             f2 = np.copy(x2)
             m = np.zeros(len(x1))
@@ -89,26 +98,64 @@ class AlgoGenCont:
             f2[m[:] == 1] = x1[m[:] == 1]
             return f1, f2
         else:
-            # SBX
-            i = np.random.uniform(len(self.x1))
-            gamma = np.where(i <= 0.5, (2*i)**(1))
-            f1 = np.concatenate((x1[:gamma], x2[gamma:]))
-            f2 = np.concatenate((x2[:gamma], x1[gamma:]))
+            # SBX (Simulated Binary Crossover)
+            eta = 1  # pode ajustar o parâmetro SBX
+            u = np.random.rand(len(x1))
+            beta = np.where(u <= 0.5, (2*u)**(1/(eta+1)),
+                            (1/(2*(1-u)))**(1/(eta+1)))
+            f1 = 0.5*((1 + beta)*x1 + (1 - beta)*x2)
+            f2 = 0.5*((1 - beta)*x1 + (1 + beta)*x2)
             return f1, f2
 
     # Função de Mutação
     def mutation(self, x, tax_mutation):
         if self.is_can:
-            # Mutação de  um só ponto
-            return
+            # Mutação de um ponto
+            idx = np.random.randint(0, len(x))
+            x[idx] = 1 - x[idx]
+            return x
         else:
             # Mutação Gaussiana
-            return
+            return x + np.random.normal(0, 0.1, len(x))
 
     # Função de Execução
     def execute(self):
+        # Armazenar os resultados de cada geração
+        gen_results = []
+
         for ger in range(self.qtd_geracoes):
-            if self.is_can:
-                return
-            else:
-                return
+            nova_pop = []
+            for i in range(self.N//2):
+                # Seleção
+                if self.is_can:
+                    prob = np.array([self.psi(ind) for ind in self.population])
+                    prob = prob / prob.sum()
+                    parent1 = self.roleta(prob)
+                    parent2 = self.roleta(prob)
+                else:
+                    parent1 = self.torneio()
+                    parent2 = self.torneio()
+
+                # Recombinação
+                if np.random.rand() < self.recomb:
+                    child1, child2 = self.recombination(parent1, parent2)
+                else:
+                    child1, child2 = parent1, parent2
+
+                # Mutação
+                if np.random.rand() < 0.05:
+                    child1 = self.mutation(child1, 0.05)
+                if np.random.rand() < 0.05:
+                    child2 = self.mutation(child2, 0.05)
+
+                nova_pop.append(child1)
+                nova_pop.append(child2)
+
+            self.population = np.array(nova_pop)
+
+            # Avaliar a população a cada geração
+            best_values = [self.psi(ind) for ind in self.population]
+            gen_results.append((ger, min(best_values), max(
+                best_values), np.mean(best_values), np.std(best_values)))
+
+        return gen_results
